@@ -192,7 +192,172 @@ for clusters ssh keys
 			(kops2 delete log)
 			
 			kops delete cluster --name x.dprats.xyz --state=s3://my-kubernetes-learner-bucket --yes
+
+L13
+Building Docker Containers
+
+download Docker Engine
+
+Or use 
+vagrant 
+	git clone https://github.com/wardviaene/devops-box.git
+	
+	cd devops-box/
+        vagrant up
 		
+dockerfile
+docker-demo app 
+ 
+docker build
+
+L14
+Demo: Building docker containers
+
+vagrant up
+vagrant ssh 
+cd /
+
+sudo apt-get install docker.io 
+docker --version
+	1.12.6
+git clone https://github.com/wardviaene/docker-demo
+cd docker-demo
+cat Dockerfile
+add user 'ubuntu' to group 'docker'
+	sudo usermod -G docker ubuntu 
+	docker build .
+	
+docker run -p 3000:3000 -it 66298f0db7b0
+
+curl localhost:3000
+
+L15
+Docker Image Registry
+
+docker run 
+	local development
+for kubernetes
+	push image to docker registry
+		docker hub
+		(create account on docker hub)
+		docker login
+		docker tag iageid your-login/docker-demo
+			(docker-demo will be the ultimate image name)
+		docker push your-login/docker-demo
+		
+		or
+		during local build time 
+			docker build -t your-login/docker-demo
+		docker push your-login/docker-demo
+			(push to docker hub or any registry to use, AWS has docker ecr)
+			
+run one process in one container 
+	all data in container is not preserved
+		use volumes to preserve data
+follow 12factor.net
+	how to write stateless applications
+
+dofferent image on docker hub 
+
+L16
+Pushing docker image 
+	(docker hub)
+	
+https://hub.docker.com
+	create new account id 
+	create repository
+	(limited private repo but unlimited public)
+
+docker login 
+	username/password
+	
+docker images
+
+docker tag 66298f0db7b0 pratikran/k8s-demo
+	docker tag 66298f0db7b0 pratikran/k8s-demo:latest
+	docker tag 66298f0db7b0 pratikran/k8s-demo:<version>
+	
+docker push pratikran/k8s-demo
+	(The push refers to a repository [docker.io/pratikran/k8s-demo])
+	(this will create a new repo on hub or update one)
+	
+L17
+Runnign First APp on Kubernetes 
+
+before container 
+	create a pod
+		pod describes application on kubernetes 
+		pod can contain 1 or more tightly coupled containers that make the app
+		those app can easily comunicate using local port numbers
+		
+	this app has only 1 container 
+
+	create a file pod-helloworld.yml
+	
+create pod
+	kubectl create -f k8s-demo/pod-helloworld.yml
+
+L18
+Demo: Running first app on kubernetes	
+
+git clone https://github.com/wardviaene/kubernetes-course
+
+cd kubernetes-course
+(minikube would be running)
+kubectl get node 
+kubectl create -f first-app/helloworld.yml 
+kubectl get pod 
+kubectl describe pod nodehelloworld.example.com
+kubectl port-forward nodehelloworld.example.com 8081:3000 
+kubectl expose pod nodehelloworld.example.com --type=NodePort --name nodehelloworld-service 
+	(service "nodehelloworld-service" exposed)
+kubectl get service 
+minikube service nodehelloworld-service --url 
+
+L19
+Demo: Useful Commands
+
+kubectl attach nodehelloworld.example.com
+kubectl exec nodehelloworld.example.com -- ls -1
+kubectl exec nodehelloworld.example.com -- touch test.txt 
+kubectl exec nodehelloworld.example.com -- ls -1
+	(if container is killed test.txt file will disappear, volumes r used for persistency)
+	
+
+kubectl get service 
+kubectl describe service nodehelloworld-service
+kubectl run -i --tty busybox --image=busybox --restart=Never -- sh
+
+L20
+Service with loadbalancer on AWS 
+
+
+	
+
+
+
+
+
+
+
+	
+	
+	
+
+
+			
+	
+		
+
+
+
+
+
+
+		
+
+		
+
 		
 		
 		
