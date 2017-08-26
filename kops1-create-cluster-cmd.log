@@ -1,0 +1,284 @@
+kops create cluster --name=x.dprats.xyz --state=s3://my-kubernetes-learner-bucket --zones=ap-south-1a --node-count=2 --node-size=t2.micro --master-size=t2.micro --dns-zone=x.dprats.xyz
+I0826 15:59:52.163767    8165 create_cluster.go:659] Inferred --cloud=aws from zone "ap-south-1a"
+I0826 15:59:52.163957    8165 create_cluster.go:845] Using SSH public key: /home/ubuntu/.ssh/id_rsa.pub
+I0826 15:59:53.152068    8165 subnets.go:183] Assigned CIDR 172.20.32.0/19 to subnet ap-south-1a
+Previewing changes that will be made:
+
+I0826 15:59:56.796009    8165 executor.go:91] Tasks: 0 done / 63 total; 34 can run
+I0826 15:59:58.414418    8165 executor.go:91] Tasks: 34 done / 63 total; 12 can run
+I0826 15:59:58.806801    8165 executor.go:91] Tasks: 46 done / 63 total; 15 can run
+I0826 15:59:58.859032    8165 executor.go:91] Tasks: 61 done / 63 total; 2 can run
+I0826 15:59:58.885738    8165 executor.go:91] Tasks: 63 done / 63 total; 0 can run
+Will create resources:
+  AutoscalingGroup/master-ap-south-1a.masters.x.dprats.xyz
+        MinSize                 1
+        MaxSize                 1
+        Subnets                 [name:ap-south-1a.x.dprats.xyz]
+        Tags                    {k8s.io/role/master: 1, Name: master-ap-south-1a.masters.x.dprats.xyz, KubernetesCluster: x.dprats.xyz}
+        LaunchConfiguration     name:master-ap-south-1a.masters.x.dprats.xyz
+
+  AutoscalingGroup/nodes.x.dprats.xyz
+        MinSize                 2
+        MaxSize                 2
+        Subnets                 [name:ap-south-1a.x.dprats.xyz]
+        Tags                    {k8s.io/role/node: 1, Name: nodes.x.dprats.xyz, KubernetesCluster: x.dprats.xyz}
+        LaunchConfiguration     name:nodes.x.dprats.xyz
+
+  DHCPOptions/x.dprats.xyz
+        DomainName              ap-south-1.compute.internal
+        DomainNameServers       AmazonProvidedDNS
+
+  EBSVolume/a.etcd-events.x.dprats.xyz
+        AvailabilityZone        ap-south-1a
+        VolumeType              gp2
+        SizeGB                  20
+        Encrypted               false
+        Tags                    {k8s.io/etcd/events: a/a, k8s.io/role/master: 1, Name: a.etcd-events.x.dprats.xyz, KubernetesCluster: x.dprats.xyz}
+
+  EBSVolume/a.etcd-main.x.dprats.xyz
+        AvailabilityZone        ap-south-1a
+        VolumeType              gp2
+        SizeGB                  20
+        Encrypted               false
+        Tags                    {k8s.io/etcd/main: a/a, k8s.io/role/master: 1, Name: a.etcd-main.x.dprats.xyz, KubernetesCluster: x.dprats.xyz}
+
+  IAMInstanceProfile/masters.x.dprats.xyz
+
+  IAMInstanceProfile/nodes.x.dprats.xyz
+
+  IAMInstanceProfileRole/masters.x.dprats.xyz
+        InstanceProfile         name:masters.x.dprats.xyz id:masters.x.dprats.xyz
+        Role                    name:masters.x.dprats.xyz
+
+  IAMInstanceProfileRole/nodes.x.dprats.xyz
+        InstanceProfile         name:nodes.x.dprats.xyz id:nodes.x.dprats.xyz
+        Role                    name:nodes.x.dprats.xyz
+
+  IAMRole/masters.x.dprats.xyz
+        ExportWithID            masters
+
+  IAMRole/nodes.x.dprats.xyz
+        ExportWithID            nodes
+
+  IAMRolePolicy/masters.x.dprats.xyz
+        Role                    name:masters.x.dprats.xyz
+
+  IAMRolePolicy/nodes.x.dprats.xyz
+        Role                    name:nodes.x.dprats.xyz
+
+  InternetGateway/x.dprats.xyz
+        VPC                     name:x.dprats.xyz
+        Shared                  false
+
+  Keypair/kops
+        Subject                 o=system:masters,cn=kops
+        Type                    client
+
+  Keypair/kube-controller-manager
+        Subject                 cn=system:kube-controller-manager
+        Type                    client
+
+  Keypair/kube-proxy
+        Subject                 cn=system:kube-proxy
+        Type                    client
+
+  Keypair/kube-scheduler
+        Subject                 cn=system:kube-scheduler
+        Type                    client
+
+  Keypair/kubecfg
+        Subject                 o=system:masters,cn=kubecfg
+        Type                    client
+
+  Keypair/kubelet
+        Subject                 o=system:nodes,cn=kubelet
+        Type                    client
+
+  Keypair/master
+        Subject                 cn=kubernetes-master
+        Type                    server
+        AlternateNames          [100.64.0.1, 127.0.0.1, api.internal.x.dprats.xyz, api.x.dprats.xyz, kubernetes, kubernetes.default, kubernetes.default.svc, kubernetes.default.svc.cluster.local]
+
+  LaunchConfiguration/master-ap-south-1a.masters.x.dprats.xyz
+        ImageID                 kope.io/k8s-1.7-debian-jessie-amd64-hvm-ebs-2017-07-28
+        InstanceType            t2.micro
+        SSHKey                  name:kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89 id:kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89
+        SecurityGroups          [name:masters.x.dprats.xyz]
+        AssociatePublicIP       true
+        IAMInstanceProfile      name:masters.x.dprats.xyz id:masters.x.dprats.xyz
+        RootVolumeSize          64
+        RootVolumeType          gp2
+        SpotPrice
+
+  LaunchConfiguration/nodes.x.dprats.xyz
+        ImageID                 kope.io/k8s-1.7-debian-jessie-amd64-hvm-ebs-2017-07-28
+        InstanceType            t2.micro
+        SSHKey                  name:kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89 id:kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89
+        SecurityGroups          [name:nodes.x.dprats.xyz]
+        AssociatePublicIP       true
+        IAMInstanceProfile      name:nodes.x.dprats.xyz id:nodes.x.dprats.xyz
+        RootVolumeSize          128
+        RootVolumeType          gp2
+        SpotPrice
+
+  ManagedFile/x.dprats.xyz-addons-bootstrap
+        Location                addons/bootstrap-channel.yaml
+
+  ManagedFile/x.dprats.xyz-addons-core.addons.k8s.io
+        Location                addons/core.addons.k8s.io/v1.4.0.yaml
+
+  ManagedFile/x.dprats.xyz-addons-dns-controller.addons.k8s.io-k8s-1.6
+        Location                addons/dns-controller.addons.k8s.io/k8s-1.6.yaml
+
+  ManagedFile/x.dprats.xyz-addons-dns-controller.addons.k8s.io-pre-k8s-1.6
+        Location                addons/dns-controller.addons.k8s.io/pre-k8s-1.6.yaml
+
+  ManagedFile/x.dprats.xyz-addons-kube-dns.addons.k8s.io-k8s-1.6
+        Location                addons/kube-dns.addons.k8s.io/k8s-1.6.yaml
+
+  ManagedFile/x.dprats.xyz-addons-kube-dns.addons.k8s.io-pre-k8s-1.6
+        Location                addons/kube-dns.addons.k8s.io/pre-k8s-1.6.yaml
+
+  ManagedFile/x.dprats.xyz-addons-limit-range.addons.k8s.io
+        Location                addons/limit-range.addons.k8s.io/v1.5.0.yaml
+
+  ManagedFile/x.dprats.xyz-addons-storage-aws.addons.k8s.io
+        Location                addons/storage-aws.addons.k8s.io/v1.6.0.yaml
+
+  Route/0.0.0.0/0
+        RouteTable              name:x.dprats.xyz
+        CIDR                    0.0.0.0/0
+        InternetGateway         name:x.dprats.xyz
+
+  RouteTable/x.dprats.xyz
+        VPC                     name:x.dprats.xyz
+
+  RouteTableAssociation/ap-south-1a.x.dprats.xyz
+        RouteTable              name:x.dprats.xyz
+        Subnet                  name:ap-south-1a.x.dprats.xyz
+
+  SSHKey/kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89
+        KeyFingerprint          1c:e4:e6:87:8e:87:f6:fc:c5:24:08:33:0f:58:c5:90
+
+  Secret/admin
+
+  Secret/kube
+
+  Secret/kube-proxy
+
+  Secret/kubelet
+
+  Secret/system:controller_manager
+
+  Secret/system:dns
+
+  Secret/system:logging
+
+  Secret/system:monitoring
+
+  Secret/system:scheduler
+
+  SecurityGroup/masters.x.dprats.xyz
+        Description             Security group for masters
+        VPC                     name:x.dprats.xyz
+        RemoveExtraRules        [port=22, port=443, port=4001, port=4789, port=179]
+
+  SecurityGroup/nodes.x.dprats.xyz
+        Description             Security group for nodes
+        VPC                     name:x.dprats.xyz
+        RemoveExtraRules        [port=22]
+
+  SecurityGroupRule/all-master-to-master
+        SecurityGroup           name:masters.x.dprats.xyz
+        SourceGroup             name:masters.x.dprats.xyz
+
+  SecurityGroupRule/all-master-to-node
+        SecurityGroup           name:nodes.x.dprats.xyz
+        SourceGroup             name:masters.x.dprats.xyz
+
+  SecurityGroupRule/all-node-to-node
+        SecurityGroup           name:nodes.x.dprats.xyz
+        SourceGroup             name:nodes.x.dprats.xyz
+
+  SecurityGroupRule/https-external-to-master-0.0.0.0/0
+        SecurityGroup           name:masters.x.dprats.xyz
+        CIDR                    0.0.0.0/0
+        Protocol                tcp
+        FromPort                443
+        ToPort                  443
+
+  SecurityGroupRule/master-egress
+        SecurityGroup           name:masters.x.dprats.xyz
+        CIDR                    0.0.0.0/0
+        Egress                  true
+
+  SecurityGroupRule/node-egress
+        SecurityGroup           name:nodes.x.dprats.xyz
+        CIDR                    0.0.0.0/0
+        Egress                  true
+
+  SecurityGroupRule/node-to-master-tcp-1-4000
+        SecurityGroup           name:masters.x.dprats.xyz
+        Protocol                tcp
+        FromPort                1
+        ToPort                  4000
+        SourceGroup             name:nodes.x.dprats.xyz
+
+  SecurityGroupRule/node-to-master-tcp-4003-65535
+        SecurityGroup           name:masters.x.dprats.xyz
+        Protocol                tcp
+        FromPort                4003
+        ToPort                  65535
+        SourceGroup             name:nodes.x.dprats.xyz
+
+  SecurityGroupRule/node-to-master-udp-1-65535
+        SecurityGroup           name:masters.x.dprats.xyz
+        Protocol                udp
+        FromPort                1
+        ToPort                  65535
+        SourceGroup             name:nodes.x.dprats.xyz
+
+  SecurityGroupRule/ssh-external-to-master-0.0.0.0/0
+        SecurityGroup           name:masters.x.dprats.xyz
+        CIDR                    0.0.0.0/0
+        Protocol                tcp
+        FromPort                22
+        ToPort                  22
+
+  SecurityGroupRule/ssh-external-to-node-0.0.0.0/0
+        SecurityGroup           name:nodes.x.dprats.xyz
+        CIDR                    0.0.0.0/0
+        Protocol                tcp
+        FromPort                22
+        ToPort                  22
+
+  Subnet/ap-south-1a.x.dprats.xyz
+        VPC                     name:x.dprats.xyz
+        AvailabilityZone        ap-south-1a
+        CIDR                    172.20.32.0/19
+        Shared                  false
+        Tags                    {kubernetes.io/cluster/x.dprats.xyz: owned, KubernetesCluster: x.dprats.xyz, Name: ap-south-1a.x.dprats.xyz}
+
+  VPC/x.dprats.xyz
+        CIDR                    172.20.0.0/16
+        EnableDNSHostnames      true
+        EnableDNSSupport        true
+        Shared                  false
+        Tags                    {KubernetesCluster: x.dprats.xyz, Name: x.dprats.xyz, kubernetes.io/cluster/x.dprats.xyz: owned}
+
+  VPCDHCPOptionsAssociation/x.dprats.xyz
+        VPC                     name:x.dprats.xyz
+        DHCPOptions             name:x.dprats.xyz
+
+Must specify --yes to apply changes
+
+Cluster configuration has been created.
+
+Suggestions:
+ * list clusters with: kops get cluster
+ * edit this cluster with: kops edit cluster x.dprats.xyz
+ * edit your node instance group: kops edit ig --name=x.dprats.xyz nodes
+ * edit your master instance group: kops edit ig --name=x.dprats.xyz master-ap-south-1a
+
+Finally configure your cluster with: kops update cluster x.dprats.xyz --yes
+

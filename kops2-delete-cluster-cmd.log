@@ -1,0 +1,29 @@
+kops delete cluster --name x.dprats.xyz --state=s3://my-kubernetes-learner-bucket
+TYPE                    NAME                                                                    ID
+autoscaling-config      master-ap-south-1a.masters.x.dprats.xyz-20170826185911                  master-ap-south-1a.masters.x.dprats.xyz-20170826185911
+autoscaling-config      nodes.x.dprats.xyz-20170826185911                                       nodes.x.dprats.xyz-20170826185911
+autoscaling-group       master-ap-south-1a.masters.x.dprats.xyz                                 master-ap-south-1a.masters.x.dprats.xyz
+autoscaling-group       nodes.x.dprats.xyz                                                      nodes.x.dprats.xyz
+dhcp-options            x.dprats.xyz                                                            dopt-4ca3a725
+iam-instance-profile    masters.x.dprats.xyz                                                    masters.x.dprats.xyz
+iam-instance-profile    nodes.x.dprats.xyz                                                      nodes.x.dprats.xyz
+iam-role                masters.x.dprats.xyz                                                    masters.x.dprats.xyz
+iam-role                nodes.x.dprats.xyz                                                      nodes.x.dprats.xyz
+instance                master-ap-south-1a.masters.x.dprats.xyz                                 i-08dcba7dda9138345
+instance                nodes.x.dprats.xyz                                                      i-089107003d127befe
+instance                nodes.x.dprats.xyz                                                      i-0dc8aee50b18cd10e
+internet-gateway        x.dprats.xyz                                                            igw-1ef79b77
+keypair                 kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89 kubernetes.x.dprats.xyz-79:38:52:c8:9b:2b:e5:a0:bf:f3:42:88:4e:5d:73:89
+route-table             x.dprats.xyz                                                            rtb-893638e0
+route53-record          api.internal.x.dprats.xyz.                                              Z35K5HB73SHGAH/api.internal.x.dprats.xyz.
+route53-record          api.x.dprats.xyz.                                                       Z35K5HB73SHGAH/api.x.dprats.xyz.
+route53-record          etcd-a.internal.x.dprats.xyz.                                           Z35K5HB73SHGAH/etcd-a.internal.x.dprats.xyz.
+route53-record          etcd-events-a.internal.x.dprats.xyz.                                    Z35K5HB73SHGAH/etcd-events-a.internal.x.dprats.xyz.
+security-group          masters.x.dprats.xyz                                                    sg-040dbe6c
+security-group          nodes.x.dprats.xyz                                                      sg-d80ebdb0
+subnet                  ap-south-1a.x.dprats.xyz                                                subnet-d3e0d3ba
+volume                  a.etcd-events.x.dprats.xyz                                              vol-0a7ddcac04c241e86
+volume                  a.etcd-main.x.dprats.xyz                                                vol-0b3f27433702c34e8
+vpc                     x.dprats.xyz                                                            vpc-a6f5decf
+
+Must specify --yes to delete cluster
