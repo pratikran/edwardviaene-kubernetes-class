@@ -331,9 +331,276 @@ kubectl run -i --tty busybox --image=busybox --restart=Never -- sh
 L20
 Service with loadbalancer on AWS 
 
+Access App from Outside Cluster
+
+AWS 
+	External Load balancer
+Other Providers
+	HAProxy, Nginx
+	Expose Port directly
+	
+Pod yml
+	app containers
+Service yml
+	loadbalancer
+Point Hostname to LoadBalancer
+
+
+L21
+Demo Service with AWS ELB
+
+kops create cluster --name=x.dprats.xyz --state=s3://my-kubernetes-learner-bucket --zones=ap-south-1a --node-count=2 --node-size=t2.micro --master-size=t2.micro --dns-zone=x.dprats.xyz
+kops update cluster x.dprats.xyz --yes --state=s3://my-kubernetes-learner-bucket
+
+git cone https://github.com/wardviaene/kubernetes-course
+
+kubernetes-course/first-app
+	
+kubectl create -f first-app/helloworld.yml 
+kubectl create -f first-app/helloworld-service.yml 
+
+Route53 
+	confire new record with ELB ALIAS
+	
+kops delete cluster --name x.dprats.xyz --state=s3://my-kubernetes-learner-bucket --yes
+
+Vagrant  AWS 
+	https://github.com/mitchellh/vagrant-aws
+
+
+
+S2
+Kubernetes BASICS
+
+L22
+Node Architecture 
+
+Architecture Overview
+Pods
+	single or multiple containers
+		containers run using Docker
+		containers communicate
+			using port numbers 
+	within cluster pods can communicate but over the network
+kubelet
+	resposible to run pods in a node 
+kube-proxy
+	for a new pod, change iptable rules
+		to make traffice routable with cluster 
+AWS ELB 
+	communicate to nodes thru IPtables 
+	IPtables has rules to transfer traffic b/w nodes or pods 
 
 	
 
+L23
+Replication controller
+
+Scaling pods
+
+App 
+	stateless 
+		horizontal scaling
+traditional databases
+	stateful
+Web Apps
+	cab be made stateless
+		session management outside container
+		files 2b saved can't be locally saved
+			either on external storage or shared service 
+			AWS S3 is helpful
+	12factor.net
+Stateful apps
+	use Volumes
+	verticall scaling
+		add cpu, ram, disks etc
+
+Replication Controller
+	scaling pods 
+	pod replicas
+	automatic replacement of pod on fail, delte, terminate
+	yaml file 
+		kind: ReplicationController
+		template:
+			pod definition
+
+L24
+Demo: Replication Controller
+
+For stateless apps -
+
+minikube start
+cd kubernetes-course
+kubectl get node
+kubectl create -f kubernetes-course/replication-controller/helloworld-repl-controller.yml 
+kubectl get pods
+kubectl describe pod helloworld-controller-d6j45
+kubectl delete pod helloworld-controller-d6j45
+kubectl scale --replicas=4 -f kubernetes-course/replication-controller/helloworld-repl-controller.yml
+	or 
+	kubectl scale --replicas=4 rc/helloworld-controller
+kubectl get rc
+kubectl delete rc/helloworld-controller
+kubectl get pods
+
+
+L25
+Deployments
+
+Replication Sets
+
+Replica Set 
+	Next Generation Replication Controller
+	new selection feature based on filtering according to set of values
+		more complex value assignment unlike ReplicationController
+		
+	It is used by Deployment Object than ReplicationController
+	
+Deployments 
+	declaration
+		app deployment and updates
+	deployment object
+		you define state of your application
+			so, k8s ensure cluster macthes desired state
+	Just using ReplicationController or ReplcationSet 
+		very cumbersome to deploy app 
+Deployment Object 
+	Deployment	
+		create
+		update 
+		rolling updates (0 downtime)
+		roll back to previous version
+		pause/resume (even a %)
+Deployment Yaml
+	Kind: Deployment 
+	template:
+		defines a pod 
+
+kubectl get deployments 
+kubectl get rs 
+kubectl get pods --show-labels
+kubectl rollout status deployment/helloworld-deployment 
+kubectl set image deployment/helloworld-deployment k8s-demo:k8s-demo:2
+	run another version of demo version 
+kubectl edit deployment/helloworld-deployment
+	similar to above and more 
+kubectl rollout status deployment/helloworld-deployment 
+kubectl rollout histroy deployment/helloworld-deployment
+kubectl rollout undo deployment/helloworld-deployment 
+	to previous version
+kubectl rollout undo deployment/helloworld-deployment --to-revision=n
+
+
+L26
+Demo: Deployments 
+
+cat deployment/helloworld-deployment.yml 
+
+kubectl create -f deployment/helloworld.yml
+kubectl get deployments 
+kubectl get rs 
+kubectl get pods --show-labels
+kubectl rollout status deployment/helloworld-deployment 
+kubectl expose deployment helloworld-deployment --type=NodePort
+	created a service , exposed it with the port 
+kubectl get service 
+kubectl describe service helloworld-deployment
+minikube service helloworld-deployment --url
+http://192.168.99.100:30029
+curl http://192.168.99.100:30029
+
+kubectl set image deployment/helloworld-deployment k8s-demo=wardviaene/k8s-demo:2
+kubectl rollout status deployment/helloworld-deployment 
+	or 
+	kubectl get deployments 
+curl http://192.168.99.100:30029
+kubectl rollout history deployment/helloworld-deployment
+	while creating use 
+		kubectl create -f deployment/helloworld.yml --record 
+			this one gives histroy better 
+kubectl rollout undo deployment/helloworld-deployment 
+kubectl rollout status deployment/helloworld-deployment 
+kubectl rollout history deployment/helloworld-deployment
+kubectl edit deployment/helloworld-deployment
+	spec:
+	  replicas: 3
+	  revisionHistoryLimit: 100
+	  selector:
+kubectl set image deployment/helloworld-deployment k8s-demo=wardviaene/k8s-demo:2
+kubectl rollout history deployment/helloworld-deployment
+kubectl rollout undo deployment/helloworld-deployment --to-revision=3
+kubectl rollout history deployment/helloworld-deployment
+curl http://192.168.99.100:30029
+
+L27
+Services
+
+Pods
+	dynamic, come and go 
+		ReplicationController	
+			terminated and created during scaling 
+		Deployments 
+			updating image version 
+				terminate and new created 
+	always should be connected using service 
+Service 
+	kubectl expose 
+		to external access 
+	creating service
+		endpoint 
+			ClusterIP - virtual IP accessed from within cluster
+			NotepOrt - reachable exertnal, same on each node 
+			LoadBalancer - created by cloud provider , access each node 
+			Also possible to use DNS names
+				ExternalName in service 
+					needs DNS add-on enabled
+Service Definition
+	kubectl expose creates same
+		default range 30000-32767
+		--service-node-port-range to kube-apiserver(init script)
+		ensure no collision
+		use AWS ELB in front to use default http ports
+
+		
+		
+L28
+Demo: Services
+
+kubectl get node 
+kubectl get pods 
+kubectl create -f first-app/helloworld.yml 
+kubectl get pods 
+kubectl describe pod nodehelloworld.example.com
+
+cat first-app/helloworld-nodeport-service.yml
+cat first-app/helloworld.yml
+kubectl create -f first-app/helloworld-nodeport-service.yml
+minikube service helloworld-service --url
+	on AWS check services 
+		kubectl get services
+		goto nodes and change security groups 
+curl http://192.168.99.100:31001
+kubectl describe service helloworld-service
+	or kubectl describe svc helloworld-service
+	NodePOrt is static
+	IP can be static, for that defie it in yaml 
+kubectl get svc
+kubectl delete svc helloworld-service
+
+
+
+L29
+Labels 
+
+
+		
+		
+
+
+
+
+	
+	
 
 
 
