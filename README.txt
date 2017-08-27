@@ -163,7 +163,7 @@ for clusters ssh keys
 			
 			error: group map [ ....... ] is already registered
 			
-			kubectl version
+			kubectl version --short=true
 			(update kubectl to latest)
 			
 		kubectl get node 
@@ -241,7 +241,7 @@ for kubernetes
 		docker hub
 		(create account on docker hub)
 		docker login
-		docker tag iageid your-login/docker-demo
+		docker tag imageid your-login/docker-demo
 			(docker-demo will be the ultimate image name)
 		docker push your-login/docker-demo
 		
@@ -592,8 +592,238 @@ kubectl delete svc helloworld-service
 L29
 Labels 
 
+Labels 
+	key/value pairs
+	used to tag resources 
+	label objects
+		eg pods as a organizational structure etc 
+	not unique
+	multiple labels to a object 
+	Label selectors 
+		filter down on an object 
+		use matching expression to match labels 
+	tag nodes 
+		tag node 
+		use nodeSelector to run a pod on node 
+	
+		kubectl label nodes node1 hardware=high-spec 
+		kubectl label nodes node2 hardware=high-spec 
+		then 
+			in a pod yaml
+				use nodeSelector
+					hardware: high-spec 
+
+L30
+Demo: nodeSelector Using Labels
+
+kubectl get nodes 
+
+cat deployment/helloworld-nodeselector.yml 
+
+kubectl get nodes --show-labels 
+kubectl create -f deployment/helloworld-nodeselector.yml 
+	using nodeSelector 
+	
+kubectl get deployments
+kubectl get pods 
+	pods failed to schedule 
+	check any pod 
+		kubectl describe pod helloworld-deployment-4129182270-6nwj6
+			it will fail to match an node with nodeSelector specified 
+kubectl label nodes minikube hardware=high-spec
+kubectl get nodes --show-labels 
+	now wait and check 
+		kubectl get pods 
+		kubectl describe pod helloworld-deployment-4129182270-6nwj6
+		
+		
+		
+L31
+HealthChecks
+	
+Application malfunctions 
+	pods and containers could still be running 
+	detect and resolve problems 
+	types 
+		1. run command in container periodically if it is working
+		2. periodic check using http url app has exposed 
+	application behind loadbalancer 
+		to ensure availability and resiliency 
+		
+Health check for a container 
+	yaml 
+		livenessProbe: 
+		
+		
+L32
+Demo: Health Checks
+
+cat deployment/helloworld-healthcheck.yml
+
+kubectl create -f deployment/helloworld-healthcheck.yml
+
+kubectl get pods 
+kubectl describe pod helloworld-deployment-583969349-55zfw
+	liveness
+kubectl edit deployment/helloworld-deployment
+	change settings 
+	
+	
+	
+L33 
+Secrets 
+	k8s distribute 
+		credentials, keys, passwords, secret data to pods 
+	k8s itself uses Secrets to provide credentials to access internal APIs 
+		same mechanism can b used in ur own app 
+Secrets
+	native to k8s 
+	other ways
+		eg external vault services 
+Secrets
+	as env variables
+	as file in a pod 
+		using volumes with files 
+		eg dotenv file or app can read it 
+	Use external image to pull secrets(4m private repos)
+	
+Secrets
+	generate secrets using files 
+		echo -n 'root' > ./username.txt; echo -n 'password' > ./password.txt 
+		kubectl create secret generic db-user-pass --from-file=./username.txt --from-file=./password.txt 
+		(secret db-user-pass created)
+	SSH key or SSL cert
+		kubectl create secret generic ssl-certificate --from-file=ssh-privatekey=~/.ssh/id_rsa --ssl-cert-=ssl-cert=mysslcert.crt
+	Secrets generation using yaml
+		kind: Secret 
+		echo -n 'root' | base64
+		echo -n 'password' | base64
+		kubectl create -f secrets-db-secret.yml
+		(secret db-secret created)
+		
+Using Secrets
+	Pod yml 
+		as environment variable
+			env:	
+		as file 
+			volumeMount:
+				mountPath: 
+			(<mountPath>/db-secrets/{username,password})
+			
+			
+L34
+Demo: Credentials using volumes 
+
+cat deployment/helloworld-secrets.yml 
+
+kubectl create -f deployment/helloworld-secrets.yml
+
+cat deployment/helloworld-secrets-volumes.yml
+
+kubectl create -f deployment/helloworld-secrets-volumes.yml
+		
+kubectl get pods 
+kubectl describe pod helloworld-deployment-292348803-d677c
+
+execute on pod 
+	kubectl exec helloworld-deployment-292348803-d677c -i -t -- bash
+		cat /etc/creds/username
+		cat /etc/creds/password
+		mount 
+			tmpfs on /run/secrets/kubernetes.io/serviceaccount
+			tmpfs on /etc/creds
+		exit
+		
+		
+		
+L35
+Demo: Running Wordpress on Kubernetes 
+
+cat wordpress/wordpress-secrets.yml
+cat wordpress/wordpress-single-deployment-no-volumes.yml
+	containers 
+		wordpress 
+		mysql
+			data is not persistent this time 
+kubectl create -f wordpress/wordpress-secrets.yml
+kubectl create -f wordpress/wordpress-single-deployment-no-volumes.yml
+ kubectl get secrets
+  kubectl get deployments
+   kubectl get pods 
+kubectl describe pod wordpress-deployment-2401615361-5gcbz
+
+cat wordpress/wordpress-service.yml
+
+kubectl create -f wordpress/wordpress-service.yml
+minikube service wordpress-service --url 
+	http://192.168.99.100:31001
+	browse and setup wordpress admin login to dashboard 
+
+kubectl get svc
+
+kubectl get pods 
+kubectl delete pod wordpress-deployment-2401615361-5gcbz
+	data was not persistent but in the container 
+		on delete it is lost 
+		can be confirmed from url that again it asks to setup wordpress admin login 
+	
 
 		
+L36
+Kubernetes Web UI 
+
+Web UI in place of kubectl commands
+
+https://<kubernetes-master>/ui
+	kubectl cluster-info
+		Kubernetes master is running at https://192.168.99.100:8443
+
+Manual install 
+	in case not accessible or not enabled in deploy type currently 
+		kubectl create -f https://rawgit.com/kubernetes/dashboard/master/src/deploy/kubernetes-dashboard.yaml 
+	
+	if password is asked, retrieve it using 
+		kubectl config view 
+		
+Minikube 
+	run 
+		minikube dashboard --url
+			http://192.168.99.100:30000
+		minikube dashboard
+		
+L37
+Demo: Web UI
+
+http://192.168.99.100:30000
+
+
+
+S3
+Kubernetes Advanced 
+
+L38
+Service Discovery
+
+DNS
+	
+
+			
+			
+
+		
+
+
+
+
+
+	
+		
+
+		
+
+		
+
+
 		
 
 
