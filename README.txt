@@ -153,6 +153,9 @@ for clusters ssh keys
 	
 	kops create cluster --name=x.dprats.xyz --state=s3://my-kubernetes-learner-bucket --zones=ap-south-1a --node-count=2 --node-size=t2.micro --master-size=t2.micro --dns-zone=x.dprats.xyz
 	
+	check for more info 
+		https://github.com/kubernetes/kops/blob/master/docs/cli/kops_create_cluster.md
+	
 	kops edit cluster x.dprats.xyz --state=s3://my-kubernetes-learner-bucket
 	
 	launch cluster 
@@ -1449,21 +1452,544 @@ L54
 Kubernetes Administration
 
 
+Architecture Overview
+
+Master Services 
+	Master node
+		kubectl -> authorization -> REST Interface 
+			new object saved 
+				eg pod definition 
+					saved in etcd
+			etcd 
+				distributed datastore 
+					3 or 5 nodes 
+				REST Interface interact with etcd 
+			REST API 
+				kubeapi server 
+			Sechdeuler 
+				communicate with 
+					REST Interface
+				schedule pods not scheduled yet 
+				plugable 
+					default k8s scheduler 
+					or some external scheduler 
+			Controller Manager 
+				Exist Multile Controller
+					NOde Controller 
+					Replication Controller
+		
+		REST Interface
+			communicates with Kubelets 
+			Kubelets 
+				are on every separate nodes
+			
 	
 
+L55
+Resource Quota
+
+K8s cluster 
+	used by many people or team 
+		resource management needed 
+		
+		manage the resources
+			given to a person or team 
+			not one person or team should take all resources (eg CPU etc)
+		Divide cluster in Namespaces 
+			enable resource quotas on it 
+			
+ResourceQUota and ObjectQuota objects 
+	Each container can specify 
+		Request Capacity 
+		Capacity Limits
+		
+	Request Capacity 
+		explicit request for resources 
+			Scheduler make decisions 
+				to where to put pods on 
+		Minimum amount of resources the pods need 
+		
+		also used by autoscaler 
+		
+	Resource Limits 
+		limit on container 
+			container will not be able to use more resources 
+		
+Examples 
+	Resource QUota 
+		run deployment with Pod 
+			with CPU resource request 200m 
+				200m = 200millicpu = 200millicores 
+			200m = 0.2 = 20% cpu core of running node 
+				node has 2 cores , it is still 20% of a single core 
+			you can put limit 
+				eg - 400m
+		Memory quotas are defined by 
+			MiB or GiB
+			
+		If admin specified capacity quota 
+			then each pod need to spcify capacity quota during creation 
+			
+			Admin can specify default requst values for pods that dont specify any value for capacity
+			
+			same is valid for limit quota 
+			
+		If resource is requested more than capcity 
+			server API error - 403 FORBIDDEN
+			kubectl will show error 
+			
+		Admin can specify following Resource Limits in a Namespace
+			requests.cpu
+			requests.mem
+			requests.storage 
+			limits.cpu 
+			limits.memory
+		Admin can have these Objects Limits 
+			configmaps
+			persistentvolumesclaims
+			pods
+			replicationcontrollers
+			resourcequotas
+			sservices
+			services.loadbalancer
+			services.nodeports 
+			secrets
+		
+		
+L56
+Namespaces 
+	allow virtual cluster within physical cluster
+	
+	logically separates your cluster
+	
+	standard namespace
+		default 
+			where all resources are launched by default 
+	
+	Namespace for kubernetes specific namespaces 
+		kube-system 
+			eg -
+				Monitoring
+				DNS
+				Dashboard 
+	Namespaces intended when 
+		many teams/projects using kubernetes cluster
+		
+	Only user doesnt need namespaces
+	
+	name of resources 
+		unique within namespaces 
+			but not unique across namespaces
+			
+	Resources of a kubernetes cluster
+		can be divided using namespaces
+			limit resources per namespace basis 
+			eg -
+				marketing team can max use 
+					10GiB memory 
+					2 loadbalancers
+					2 CPU cores 
+	
+	create 
+	
+		kubectl create namespace myspace
+	List
+		kubectl get namespaces 
+		
+	set default namespace to launch resource
+		export CONTEXT=$(kubectl config view|awk '/current-context/ {print $2}')
+		kubectl config set-context $CONTEXT --namespace=myspace
+		
+	
+	Create Resource Limit within that namespace 
+		Kind: ResourceQuota
+		
+			Resource Limits
+			Object Limits 
+			
+
+L57
+Demo: Namespace Quotas
+
+cd kubernetes-course
+
+cat resourcequotas/resourcequota.yml 
+
+kubectl create -f resourcequotas/resourcequota.yml 
+
+cat resourcequotas/helloworld-no-quotas.yml
+
+kubectl create -f resourcequotas/helloworld-no-quotas.yml
+
+kubectl get quota --namespace myspace
+kubectl get deploy --namespace myspace
+	DESIRED	CURRENT
+	3		0
+kubectl get rs --namespace myspace
+kubectl describe rs/helloworld-deployment-4153696333 --namespace myspace
+	Error creating: pods "helloworld-deployment-4153696333-" is forbidden: failed quota: compute-quota: must specify limits.cpu,limits.memory,requests.cpu,requests.memory
+	
+	Here 
+		admin specified quotas 
+		but while launching resources we didnt specify quotas 
+			so, they didnt launch 
+	
+kubectl delete -f resourcequotas/helloworld-no-quotas.yml
+kubectl get deploy --namespace myspace
+
+cat resourcequotas/helloworld-with-quotas.yml
+kubectl create -f resourcequotas/helloworld-with-quotas.yml
+
+kubectl get deploy --namespace myspace
+kubectl get pod --namespace myspace
+	3 replicas requested but only 2 pods created 
+
+kubectl get rs --namespace myspace
+kubectl describe rs helloworld-deployment-1576367412 --namespace myspace 
+	Error creating: pods "helloworld-deployment-1576367412-" is forbidden: exceeded quota: compute-quota, requested: limits.memory=1Gi,requests.memory=512Mi, used: limits.memory=2Gi,requests.memory=1Gi, limited: limits.memory=2Gi,requests.memory=1Gi
+	
+	First 2 pods success but 3rd errored 
+	
+Check Quota 
+	kubectl describe quota compute-quota --namespace myspace
+	
+Delete deployment
+	kubectl delete deploy/helloworld-deployment --namespace myspace
+	
+	kubectl get deploy --namespace=myspace
+	kubectl get pod --namespace=myspace
+	
+cat resourcequotas/defaults.yml 
+	Kind: LimitRange 
+	
+kubectl create -f resourcequotas/defaults.yml
+(limitrange "limits" created)
+kubectl describe limits limits --namespace=myspace
+	These are limits on containers 
+		Even defaults for Pods can be choosen 
+		
+kubectl create -f resourcequotas/helloworld-no-quotas.yml
+kubectl get pod --namespace myspace
+
+
+
+L58
+User Management
+	2 types of users 
+		normal user 
+			to access cluster externally using api 
+				eg - through kubectl 
+			not managed using objects 
+		Service user 
+			managed by objects 
+			used to autheticate within cluster 
+				eg - from inside pod or kubelet
+			these are managed like secrets 
+
+Authetication strategy 
+	Normal user
+		client certs
+		bearer token 
+		authentication proxy 
+			authentication proxy b/w api 
+		HTTP Basic Authentication 
+		OpenID
+		Webhooks 
+			here we can specify own authentication mechanism 
+	Service User 
+		Service Account Tokens 
+			stored as credetentials using secrets 
+				those screts are mounted on pods to allow communication b/w services 
+		Specific to namespace 
+		are created automatically by API or manually using objects 
+		any API call not authenticated is consisdered as an anonymous user 
+			Service account tokens used 
+			
+			
+	Indenpendent from authentication mechanism 
+		Normal User attributes 
+			Username 
+			UID 
+			Groups
+			Extra field to store Information 
+	Normal User 
+		after authentication 
+			access to everything 
+			to limit access 
+				need to configure authorization 
+			Multiple offering to choose from 
+				ALwaysALlow/AlwaysDeny
+				ABAC(attribute based access control)
+				RBAC(Role based access control)
+				Webhooks(authorization by remote service)
+		Authorization work in progress
+			ABAC 
+				manual configuration 
+			RBAC uses the rbac.authorization.k8s.io API group 
+				Allows admin to dynamically configure permissions through API 
+		kubernetes 1.3 
+			RBAC 
+				is still alpha 
+				experimental 
+				will become stable 
+		current state ABAC/RBAC 
+			kubernetes.io/docs/admin/authorization/
+
+			
+L59
+Demo: Adding Users
+
+minikube ssh 
+
+	create private key 
+		openssl genrsa -out prats.pem 2048
+		
+	create cert signing request 
+		 openssl req -new -key prats.pem -out prats-csr.pem -subj '//CN=prats\O=myteam\'
+		 (on git MINGW64)
+		  openssl req -new -key prats.pem -out prats-csr.pem -subj '/CN=prats/O=myteam/'
+		  
+	create cert 
+		openssl.exe x509 -req -in prats-csr.pem -CA /var/lib/localkube/certs/ca.crt -CAkey /var/lib/localkube/certs/ca.key -CAcreateserial -out prats.crt -days 1000
+		
+C:\Users\plearnever\.kube\config
+	change apiserver.crt, apiserver.key to
+		prats.crt, prats.key 
+	copy prats.crt, prats.key to 
+		C:\Users\plearnever\.minikube
+
+kubectl get node 
+minikube config view
+
+Above certs are being used as authenticated user communication between kubectl and minikube 
+
+Above way for single users 
+In corporate,
+	implement own authentication like 
+		proxy with corporate gateway 
 
 
 		
+L60
+Networking
+
+
+Approach different than default Docker Setup 
+	Container to container communication within pod 
+		through LOCALHOST and PORT number 
+	POD-to-SERVICE communication
+		using
+			NodePort
+			DNS 
+	EXTERNAL-to-SERVICE 
+		using 
+			LOADBALANCER (eg AWS ELB, Ingress Controller)
+			NodePort
+
+Kubernetes 
+	Pod should always be routable 
+		Pod-to-Pod communication 
+			regardless of which node they are running 
+		Every Pod has its own IP ADDRESS 
+			Pods on different NODEs use this IP address to communicate 
+				This is implemented differently depending upon your networking setup 
 	
-								
-							
+on AWS
+	its kubenet networking (kops default)
+		Every Pod get an IP that is routable using the AWS VPC Network 
+		kubernetes master allocates a /24 subnet to each node (254 IP addresses)
+		This subnet is added to VPC route table using sdk
+		There is a limit of 50 entries
+			you cant have more than 50 nodes in a single AWS cluster 
+			AWS can raise limit to 100, but it might have performance impact
+		
+Networking 
+	Not every cloud provider has VPC technology 
+		GCE, Azure do have something similar 
+	For other cloud providers , alternatives available 
+		Container Network Interface (CNI)
+			Software that provide libraries/plugins for network interfaces within containers 
+			Popular solutions are Calico, Weave (standalone or with CNI)
+		Overlay Network 
+			Flannel 
+				easy and popular 
+			check google or kubernetes network page for others 
+			
+Flannel 
+	Digital Ocean
+		Overlay Network
+	uses etcd as a backend to store networking information 
+	Overlay Network 
+		Flannel works as gateway b/w pods on 2 separate nodes 
+			working virtually over the real networking 
+		
+Home Kubernetes Networking 
+Digital Ocean
+	CNI
+		calico, weave
+	Flannel
+
+
+Usually Kubernetes Launch scripts will include scripts for Flannel 
+	but doing manual setup 
+		good to understand FLannel, CNI etc 
+		
+
+L61
+Node Maintenance
 	
-
+	Node Controller 
+		manages Node Objects 
+		assign IP space to newly launched Node 
+		keeps up-to-date NODE LIST with available machines 
+		moniter health of the node 
+			unhealthy node get deleted 
+			Pods on unhealthy nodes get rescheduled 
 	
+		Adding new nodes 
+			kubelet will attempt to register itself 
+				self-registration 
+					default behaviour 
+						Manual registration can be done 
+				Allows to easily add more nodes 
+					without doing any API changes yourself 
+			
+			a new node object is automatically created 
+				Metadata (a name: IP or hostname)
+				Labels(Cloud Region/AZs/instance Size etc)
+				
+			A node also has a node condition 
+				eg - READY, OutOfDisk
+				
+		When need to de-commision a node 
+			do it gracefully 
+				eg - pods are rescheduled properly
+				so, drain a node 
+					before shutdown or take it out of cluster 
+				to drain a node 
+					kubectl drain <nodename> --grace-period=600
+				if a single node not runs pods managed by controller 
+					ie ReplicaSet or ReplicationController 
+						kubectl drain <nodename> --force
+					
+					
+					
+L62
+Demo: Node Maintenance
 
-
-
-
+Drain a Node 
+	kubectl get node 
 	
+	kubectl create -f deployment/helloworld.yml 
+	
+	kubectl get pod 
+	
+	kubectl drain minikube
+		node "minikube" cordoned
+		
+		error: pods with local storage (use --delete-local-data to override): monitoring-grafana-2175968514-f0rct, monitoring-influxdb-1957622127-x8zg6; pods not managed by ReplicationController, ReplicaSet, Job, DaemonSet or StatefulSet (use --force to override): kube-addon-manager-minikube
+		
+	kubectl drain minikube --force
+		the pods are deleted as they can't be rescheduled 
+	
+		node "minikube" already cordoned
+		error: pods with local storage (use --delete-local-data to override): monitoring-grafana-2175968514-f0rct, monitoring-influxdb-1957622127-x8zg6
+		
+	kubectl drain minikube --force --delete-local-data
+		node "minikube" already cordoned
+		WARNING: Deleting pods not managed by ReplicationController, ReplicaSet, Job, DaemonSet or StatefulSet: kube-addon-manager-minikube; Deleting pods with local storage: monitoring-grafana-2175968514-f0rct, monitoring-influxdb-1957622127-x8zg6
+		pod "helloworld-deployment-4153696333-l9mh6" evicted
+		pod "helloworld-deployment-4153696333-zdbjg" evicted
+		pod "monitoring-grafana-2175968514-f0rct" evicted
+		pod "helloworld-deployment-4153696333-ztfl7" evicted
+		pod "monitoring-influxdb-1957622127-x8zg6" evicted
+		pod "kubernetes-dashboard-1j9gr" evicted
+		pod "heapster-603813915-ndj49" evicted
+		pod "kube-dns-910330662-0cs42" evicted
+		node "minikube" drained
+		
+	kubectl get node 
+		NAME       STATUS                     AGE       VERSION
+		minikube   Ready,SchedulingDisabled   4d        v1.7.0
+		
+	kubectl get pods
+		NAME                                     READY     STATUS    RESTARTS   AGE
+		helloworld-deployment-4153696333-7lkh4   0/1       Pending   0          1m
+		helloworld-deployment-4153696333-sxht8   0/1       Pending   0          1m
+		helloworld-deployment-4153696333-wqpwr   0/1       Pending   0          1m
+		
+		Pending :
+			Pods cant be scheduled any more 
+		
+		On AWS Cluster with Kops
+			these Pods will scheduled and run on different Node 
 
-
+		
+	
+L63
+High Availability
+	
+	Production Cluster 
+		Master Services 
+			must be a Highly Available SetUp
+			
+		Set Up 
+			Clustering etcd 
+				at least 3 etcd nodes 
+					if 1 etcd runs and it fails
+						kubernetes will not work 
+			Replicated API servers with LoadBalancer
+			Run Multiple instances of Scheduler and Controllers 
+				only one of them will be leader 
+					others on standby 
+					this for all master nodes taken together 
+			
+	HA 
+		1 etcd - no HA 
+		3 etcd - typical HA setup 
+		5 etcd - large cluster 
+		
+		Masters 
+			kubelet 
+			monit 
+			scheduler
+			Controller Manager 
+			REST API Interface
+			
+		Minikube is 1 node - Not HA 
+		
+		AWS 
+			kops does heavy lifting 
+			
+		on other cloud platform 
+			look for specified tools
+			
+			kubeadm 
+				is in alpha 
+				promising to setup cluster for you 
+		
+		platform without tooling 
+			https://kubernetes.io/docs/admin/high-availability/
+				to implement HA yourself 
+				
+		
+L64 
+Demo: High Availability 
+	
+	AWS 
+		kops 
+			Multiple Masters
+			
+				kops create cluster --name=x.dprats.xyz --state=s3://my-kubernetes-learner-bucket --zones=ap-south-1a,ap-south-1b,ap-south-1c --node-count=2 --node-size=t2.micro --master-size=t2.micro --master-zones=ap-south-1a,ap-south-1b,ap-south-1c --dns-zone=x.dprats.xyz
+					
+					(slave nodes and master nodes will run across zones, this will create HA but complicate volumes)
+				
+				kops edit --name=x.dprats.xyz nodes --state=s3://my-kubernetes-learner-bucket
+				
+				kops edit --name=x.dprats.xyz master-ap-south-1a --state=s3://my-kubernetes-learner-bucket
+			
+		commands 
+			kops edit 
+				command to edit the cluster 
+				
+		
